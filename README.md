@@ -54,5 +54,5 @@ Start with [CONTRIBUTING.md](CONTRIBUTING.md), then copy [examples/custom-connec
 ## Links
 
 - [Website](https://agentrein.com)
-- [Docs](https://docs.agentrein.com)
+- [Docs](https://agentrein.com/docs)
 - [Dashboard](https://dashboard.agentrein.com)
