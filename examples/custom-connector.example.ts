@@ -1,4 +1,4 @@
-import type { Connector } from '../types';
+import type { Connector } from '@agentrein/types';
 
 // Replace this with your official SDK client type, for example:
 // import { TodoistApi as TYourSDKClient } from '@doist/todoist-api-typescript';

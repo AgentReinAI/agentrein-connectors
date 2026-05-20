@@ -6,6 +6,14 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![TypeScript](https://img.shields.io/badge/TypeScript-ready-3178c6.svg)](https://www.typescriptlang.org/)
 
+## Install Types
+
+```bash
+npm install @agentrein/types
+```
+
+> Provides full TypeScript autocomplete when writing your own connector.
+
 ## What is AgentRein?
 
 AgentRein is a rollback and safety layer for AI agents that take actions in production tools. It records agent actions, captures before-state where needed, and executes service-specific rollback logic when an action must be undone. Learn more at [agentrein.com](https://agentrein.com).

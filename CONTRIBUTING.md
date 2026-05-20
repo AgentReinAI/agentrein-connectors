@@ -8,11 +8,17 @@ The rollback registry uses these connector definitions to find the correct rollb
 
 ## Quick Start
 
-1. Copy `examples/custom-connector.example.ts`.
-2. Rename the connector, action interfaces, and `apiName` values for your service.
-3. Define action, response, payload, and snapshot types for the service APIs you support.
-4. Implement rollback with the official SDK and the provided `context.client`.
-5. Submit a PR with the connector, docs updates, and checklist completed.
+1. Install types.
+
+```bash
+npm install @agentrein/types
+```
+
+2. Copy `examples/custom-connector.example.ts`.
+3. Rename the connector, action interfaces, and `apiName` values for your service.
+4. Define action, response, payload, and snapshot types for the service APIs you support.
+5. Implement rollback with the official SDK and the provided `context.client`.
+6. Submit a PR with the connector, docs updates, and checklist completed.
 
 ## Connector Rules
 

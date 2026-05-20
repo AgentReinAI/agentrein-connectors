@@ -1,3 +1,6 @@
+// Available on npm: @agentrein/types
+// npm install @agentrein/types
+
 export type OperationType = "CREATE" | "UPDATE" | "DELETE";
 
 export type SafetyLevel = "LOW" | "MEDIUM" | "HIGH";
