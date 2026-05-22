@@ -9,7 +9,7 @@ on:
       - main
     paths:
       - 'connectors/**'
-      - 'types.ts'
+      - 'types/**'
 
 jobs:
   sync:
@@ -36,7 +36,7 @@ jobs:
         run: |
           mkdir -p private-repo/src/core/registry/connectors/
           cp -r public-repo/connectors/* private-repo/src/core/registry/connectors/
-          cp public-repo/types.ts private-repo/src/core/registry/types.ts
+          cp public-repo/types/index.ts private-repo/src/core/registry/types.ts
 
       - name: Create Pull Request on private backend
         uses: peter-evans/create-pull-request@v6
@@ -55,8 +55,8 @@ jobs:
             **Source repo:** agentrein/agentrein-connectors
 
             ### Changed files:
-            - `backend/src/core/registry/connectors/`
-            - `backend/src/core/registry/types.ts`
+            - `src/core/registry/connectors/`
+            - `src/core/registry/types.ts`
 
             ### Review checklist:
             - [ ] Rollback logic is correct
