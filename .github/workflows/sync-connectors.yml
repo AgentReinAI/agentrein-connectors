@@ -34,8 +34,9 @@ jobs:
 
       - name: Copy connectors to private backend
         run: |
-          cp -r public-repo/connectors/* private-repo/backend/src/core/registry/connectors/
-          cp public-repo/types.ts private-repo/backend/src/core/registry/types.ts
+          mkdir -p private-repo/src/core/registry/connectors/
+          cp -r public-repo/connectors/* private-repo/src/core/registry/connectors/
+          cp public-repo/types.ts private-repo/src/core/registry/types.ts
 
       - name: Create Pull Request on private backend
         uses: peter-evans/create-pull-request@v6
