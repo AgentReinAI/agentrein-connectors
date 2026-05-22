@@ -20,12 +20,17 @@ jobs:
         with:
           path: public-repo
 
+      - name: Configure Git for private repo access
+        run: |
+          git config --global url."https://x-access-token:${{ secrets.PRIVATE_REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
       - name: Checkout private backend
         uses: actions/checkout@v4
         with:
-          repository: agentrein/agentrein-backend
+          repository: agentrein/backend
           token: ${{ secrets.PRIVATE_REPO_TOKEN }}
           path: private-repo
+          persist-credentials: false
 
       - name: Copy connectors to private backend
         run: |
