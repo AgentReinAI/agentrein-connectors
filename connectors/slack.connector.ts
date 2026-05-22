@@ -213,4 +213,5 @@ export const slackConnector: Connector = {
         } as SnapshotConnectorAction,
     ],
 };/ /   s y n c   t e s t  
+ / /   s y n c   t e s t   2  
  
