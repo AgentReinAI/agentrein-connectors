@@ -23,7 +23,7 @@ jobs:
       - name: Checkout private backend
         uses: actions/checkout@v4
         with:
-          repository: AgentReinAI/agentrein-backend
+          repository: agentrein/agentrein-backend
           token: ${{ secrets.PRIVATE_REPO_TOKEN }}
           path: private-repo
 
@@ -46,7 +46,7 @@ jobs:
             This PR was automatically created by the public connector repo.
 
             **Source commit:** ${{ github.sha }}
-            **Source repo:** AgentReinAI/agentrein-connectors
+            **Source repo:** agentrein/agentrein-connectors
 
             ### Changed files:
             - `backend/src/core/registry/connectors/`
