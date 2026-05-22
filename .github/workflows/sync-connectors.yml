@@ -1,0 +1,63 @@
+# File: .github/workflows/sync-connectors.yml
+# Place this file in the PUBLIC repo (agentrein-connectors)
+
+name: Sync Connectors to Private Backend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'connectors/**'
+      - 'types.ts'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout public repo
+        uses: actions/checkout@v4
+        with:
+          path: public-repo
+
+      - name: Checkout private backend
+        uses: actions/checkout@v4
+        with:
+          repository: AgentReinAI/agentrein-backend
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          path: private-repo
+
+      - name: Copy connectors to private backend
+        run: |
+          cp -r public-repo/connectors/* private-repo/backend/src/core/registry/connectors/
+          cp public-repo/types.ts private-repo/backend/src/core/registry/types.ts
+
+      - name: Create Pull Request on private backend
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          path: private-repo
+          commit-message: "sync: update connectors from public repo"
+          branch: sync/connectors-${{ github.sha }}
+          title: "sync: connector updates from public repo"
+          body: |
+            ## Automated Connector Sync
+
+            This PR was automatically created by the public connector repo.
+
+            **Source commit:** ${{ github.sha }}
+            **Source repo:** AgentReinAI/agentrein-connectors
+
+            ### Changed files:
+            - `backend/src/core/registry/connectors/`
+            - `backend/src/core/registry/types.ts`
+
+            ### Review checklist:
+            - [ ] Rollback logic is correct
+            - [ ] No compensationEngine imports
+            - [ ] Error format follows convention
+            - [ ] safetyLevel is appropriate
+            - [ ] npm run build passes
+          labels: |
+            sync
+            connectors
