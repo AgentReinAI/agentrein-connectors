@@ -214,4 +214,5 @@ export const slackConnector: Connector = {
     ],
 };/ /   s y n c   t e s t  
  / /   s y n c   t e s t   2  
+ / /   s y n c   t e s t   3  
  
