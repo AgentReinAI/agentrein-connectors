@@ -8,6 +8,8 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![TypeScript](https://img.shields.io/badge/TypeScript-ready-3178c6.svg)](https://www.typescriptlang.org/)
 
+</div>
+
 ## Install Types
 
 ```bash
@@ -15,6 +17,8 @@ npm install @agentrein/types
 ```
 
 > Provides full TypeScript autocomplete when writing your own connector.
+
+<div align="center">
 
 ## What is AgentRein?
 
@@ -33,6 +37,8 @@ AgentRein is a rollback and safety layer for AI agents that take actions in prod
 | Salesforce    | 4       | jsforce                 | Delete + Restore (incremental)        |
 | Notion        | 4       | @notionhq/client        | Trash + Restore + Delete blocks       |
 | Stripe        | 3       | stripe                  | Delete + Human Gate                   |
+
+</div>
 
 ## How It Works
 
@@ -66,5 +72,3 @@ Start with [CONTRIBUTING.md](CONTRIBUTING.md), then copy [examples/custom-connec
 - [Website](https://agentrein.com)
 - [Docs](https://agentrein.com/docs)
 - [Dashboard](https://agentrein.com/dashboard)
-
-</div>
