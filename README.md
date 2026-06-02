@@ -1,3 +1,4 @@
+<div align="center">
 # AgentRein Connectors
 
 > Open-source rollback connectors for AI agent actions.
@@ -64,3 +65,4 @@ Start with [CONTRIBUTING.md](CONTRIBUTING.md), then copy [examples/custom-connec
 - [Website](https://agentrein.com)
 - [Docs](https://agentrein.com/docs)
 - [Dashboard](https://agentrein.com/dashboard)
+</div>
