@@ -2,7 +2,7 @@
       
 # AgentRein Connectors
 
-> Open-source rollback connectors for AI agent actions.
+Open-source rollback connectors for AI agent actions.
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
