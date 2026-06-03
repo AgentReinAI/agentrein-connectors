@@ -18,10 +18,6 @@ npm install @agentrein/types
 
 > Provides full TypeScript autocomplete when writing your own connector.
 
-## What is AgentRein?
-
-AgentRein is a rollback and safety layer for AI agents that take actions in production tools. It records agent actions, captures before-state where needed, and executes service-specific rollback logic when an action must be undone. Learn more at [agentrein.com](https://agentrein.com).
-
 ## Supported Connectors
 
 | Connector     | Actions | Client SDK              | Rollback Strategy                     |
@@ -35,29 +31,6 @@ AgentRein is a rollback and safety layer for AI agents that take actions in prod
 | Salesforce    | 4       | jsforce                 | Delete + Restore (incremental)        |
 | Notion        | 4       | @notionhq/client        | Trash + Restore + Delete blocks       |
 | Stripe        | 3       | stripe                  | Delete + Human Gate                   |
-
-## How It Works
-
-```text
-AI agent action
-      |
-      v
-AgentRein records action metadata
-      |
-      v
-Connector action matched by apiName
-      |
-      +--> captureBeforeState=true? snapshot current resource
-      |
-      v
-Rollback requested
-      |
-      v
-Registry executes connector rollback with context.client
-      |
-      v
-Service restored, compensated, or safely gated
-```
 
 ## Write Your Own Connector
 
