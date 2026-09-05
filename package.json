@@ -1,0 +1,39 @@
+{
+  "name": "agentrein-connectors",
+  "version": "1.0.0",
+  "description": "<div align=\"center\">",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agentrein/agentrein-connectors.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/agentrein/agentrein-connectors/issues"
+  },
+  "homepage": "https://github.com/agentrein/agentrein-connectors#readme",
+  "devDependencies": {
+    "@types/node": "^25.9.5",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@hubspot/api-client": "^14.0.1",
+    "@notionhq/client": "^5.26.0",
+    "@octokit/rest": "^22.0.1",
+    "@slack/web-api": "^8.1.1",
+    "@types/jsforce": "^1.11.6",
+    "axios": "^1.20.0",
+    "googleapis": "^171.4.0",
+    "jsforce": "^3.10.25",
+    "stripe": "^22.6.1"
+  }
+}
