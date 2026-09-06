@@ -132,54 +132,53 @@ type SnapshotConnectorAction = ConnectorAction & {
     resourceUrlResolver?: (apiName: string, payload: Record<string, unknown>) => string | null;
 };
 
+function spreadsheetValuesUrlResolver(_apiName: string, payload: Record<string, unknown>): string | null {
+    const spreadsheetId = typeof payload.spreadsheetId === 'string' ? payload.spreadsheetId : null;
+    const range = typeof payload.range === 'string' ? payload.range : null;
+    if (!spreadsheetId || !range) {
+        return null;
+    }
+    return `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}`;
+}
+
+function spreadsheetUrlResolver(_apiName: string, payload: Record<string, unknown>): string | null {
+    const spreadsheetId = typeof payload.spreadsheetId === 'string' ? payload.spreadsheetId : null;
+    if (!spreadsheetId) {
+        return null;
+    }
+    return `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}`;
+}
+
 export const gsheetsConnector: Connector = {
     connector: 'gsheets',
     actions: [
+        // ─── Existing Actions (Corrected & Reclassified) ─────────────────────
         {
             apiName: 'gsheets.values.append',
             captureBeforeState: false,
             operationType: 'CREATE',
-            safetyLevel: 'MEDIUM',
-            resourceUrlResolver: () => null,
+            safetyLevel: 'HIGH',
+            resourceUrlResolver: spreadsheetValuesUrlResolver,
             rollback: {
-                type: 'API_CALL',
-                execute: async (rawAction: unknown, context: RollbackContext): Promise<void> => {
-                    const orgId = 'unknown';
-                    const action = rawAction as GSheetsAction;
-                    const response = getResponse(action, orgId);
-                    const updatedRange = response.updates?.updatedRange;
-                    if (!updatedRange) {
-                        throw new Error(
-                            `[gsheetsConnector] rollback failed | action: ${action.id} | org: ${orgId} | op: ${action.operationType} | reason: Missing updatedRange in response`,
-                        );
-                    }
-
-                    const spreadsheetId = action.payload.spreadsheetId;
-                    if (!spreadsheetId) {
-                        throw new Error(
-                            `[gsheetsConnector] rollback failed | action: ${action.id} | org: ${orgId} | op: ${action.operationType} | reason: Missing spreadsheetId in payload`,
-                        );
-                    }
-
-                    const sheetsClient = context.client as sheets_v4.Sheets;
-                    try {
-                        await sheetsClient.spreadsheets.values.clear({
-                            spreadsheetId,
-                            range: updatedRange,
-                        });
-                    } catch (err) {
-                        handleRollbackError(action, orgId, err);
-                    }
+                type: 'NONE',
+                execute: async (): Promise<void> => {
+                    throw new Error(
+                        'row position may have shifted since this row was appended — clearing by a static range risks deleting unrelated data; this action has no safe automatic rollback and requires human approval instead',
+                    );
                 },
-                requires: ['google.clientId', 'google.clientSecret', 'google.refreshToken'],
+                requires: [],
             },
         } as SnapshotConnectorAction,
         {
+            // Note: gsheets.values.update stays Group 2 despite Sheets' general row-position fragility.
+            // Unlike append/insert/delete-row operations where the platform itself computed and later re-uses a position reference,
+            // values.update's range is explicitly provided by the caller (the Agent) each time based on its own knowledge of the target cells —
+            // the residual risk here is the same as any concurrent-edit risk on a shared document, not a risk manufactured by AgentRein's own rollback mechanism reusing a stale position.
             apiName: 'gsheets.values.update',
             captureBeforeState: true,
             operationType: 'UPDATE',
             safetyLevel: 'MEDIUM',
-            resourceUrlResolver: () => null,
+            resourceUrlResolver: spreadsheetValuesUrlResolver,
             rollback: {
                 type: 'API_CALL',
                 execute: async (rawAction: unknown, context: RollbackContext): Promise<void> => {
@@ -212,7 +211,7 @@ export const gsheetsConnector: Connector = {
             captureBeforeState: false,
             operationType: 'CREATE',
             safetyLevel: 'HIGH',
-            resourceUrlResolver: () => null,
+            resourceUrlResolver: spreadsheetUrlResolver,
             rollback: {
                 type: 'API_CALL',
                 execute: async (rawAction: unknown, context: RollbackContext): Promise<void> => {
@@ -250,7 +249,7 @@ export const gsheetsConnector: Connector = {
             captureBeforeState: false,
             operationType: 'CREATE',
             safetyLevel: 'MEDIUM',
-            resourceUrlResolver: () => null,
+            resourceUrlResolver: spreadsheetUrlResolver,
             rollback: {
                 type: 'API_CALL',
                 execute: async (rawAction: unknown, context: RollbackContext): Promise<void> => {
@@ -284,6 +283,72 @@ export const gsheetsConnector: Connector = {
                     }
                 },
                 requires: ['google.clientId', 'google.clientSecret', 'google.refreshToken'],
+            },
+        } as SnapshotConnectorAction,
+
+        // ─── Group 4 Actions (No safe automatic rollback due to identity drift / range risk) ───
+        {
+            apiName: 'gsheets.rows.insert',
+            captureBeforeState: false,
+            operationType: 'CREATE',
+            safetyLevel: 'HIGH',
+            resourceUrlResolver: spreadsheetUrlResolver,
+            rollback: {
+                type: 'NONE',
+                execute: async (): Promise<void> => {
+                    throw new Error(
+                        'inserted row position may shift due to other operations — no safe automatic rollback is available; requires human approval for any reversal',
+                    );
+                },
+                requires: [],
+            },
+        } as SnapshotConnectorAction,
+        {
+            apiName: 'gsheets.rows.delete',
+            captureBeforeState: false,
+            operationType: 'DELETE',
+            safetyLevel: 'HIGH',
+            resourceUrlResolver: spreadsheetUrlResolver,
+            rollback: {
+                type: 'NONE',
+                execute: async (): Promise<void> => {
+                    throw new Error(
+                        'deleted row content cannot be safely restored by position — row indices shift after deletion, making automatic recreation unreliable; requires human approval instead',
+                    );
+                },
+                requires: [],
+            },
+        } as SnapshotConnectorAction,
+        {
+            apiName: 'gsheets.rows.appendOrUpdate',
+            captureBeforeState: false,
+            operationType: 'UPDATE',
+            safetyLevel: 'HIGH',
+            resourceUrlResolver: spreadsheetUrlResolver,
+            rollback: {
+                type: 'NONE',
+                execute: async (): Promise<void> => {
+                    throw new Error(
+                        "this operation may append or update depending on existing data, and the affected row's position is not reliably trackable for automatic rollback — requires human approval instead",
+                    );
+                },
+                requires: [],
+            },
+        } as SnapshotConnectorAction,
+        {
+            apiName: 'gsheets.values.clear',
+            captureBeforeState: false,
+            operationType: 'DELETE',
+            safetyLevel: 'HIGH',
+            resourceUrlResolver: spreadsheetValuesUrlResolver,
+            rollback: {
+                type: 'NONE',
+                execute: async (): Promise<void> => {
+                    throw new Error(
+                        "cleared cell values cannot be automatically restored without a prior snapshot of the exact range's content, and clearing operations are frequently used precisely because content is stale or unknown — requires human approval instead",
+                    );
+                },
+                requires: [],
             },
         } as SnapshotConnectorAction,
     ],
