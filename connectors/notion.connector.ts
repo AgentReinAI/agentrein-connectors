@@ -233,5 +233,179 @@ export const notionConnector: Connector = {
                 requires: ['notion.token'],
             },
         } as SnapshotConnectorAction,
+        {
+            apiName: 'notion.pages.archive',
+            captureBeforeState: false,
+            operationType: 'UPDATE',
+            safetyLevel: 'MEDIUM',
+            resourceUrlResolver: (_apiName: string, payload: Record<string, unknown>) =>
+                typeof payload.page_id === 'string' ? `https://api.notion.com/v1/pages/${payload.page_id}` : null,
+            rollback: {
+                type: 'API_CALL',
+                execute: async (rawAction: unknown, context: RollbackContext): Promise<void> => {
+                    const orgId = 'unknown';
+                    const action = rawAction as NotionAction;
+                    // Toggle target — page_id is caller-specified in the payload, not server-generated; no response extraction needed.
+                    const pageId = typeof action.payload?.page_id === 'string' ? action.payload.page_id : undefined;
+                    if (!pageId) {
+                        throw new Error(
+                            `[notionConnector] rollback failed | action: ${action.id} | org: ${orgId} | op: ${action.operationType} | reason: Missing page_id in payload`,
+                        );
+                    }
+
+                    const client = context.client as NotionClient;
+                    try {
+                        await client.pages.update({
+                            page_id: pageId,
+                            in_trash: false,
+                        });
+                    } catch (err) {
+                        handleNotionRollbackError(action, orgId, err);
+                    }
+                },
+                requires: ['notion.token'],
+            },
+        } as SnapshotConnectorAction,
+        {
+            apiName: 'notion.pages.restore',
+            captureBeforeState: false,
+            operationType: 'UPDATE',
+            safetyLevel: 'MEDIUM',
+            resourceUrlResolver: (_apiName: string, payload: Record<string, unknown>) =>
+                typeof payload.page_id === 'string' ? `https://api.notion.com/v1/pages/${payload.page_id}` : null,
+            rollback: {
+                type: 'API_CALL',
+                execute: async (rawAction: unknown, context: RollbackContext): Promise<void> => {
+                    const orgId = 'unknown';
+                    const action = rawAction as NotionAction;
+                    // Toggle target — page_id is caller-specified in the payload, not server-generated; no response extraction needed.
+                    const pageId = typeof action.payload?.page_id === 'string' ? action.payload.page_id : undefined;
+                    if (!pageId) {
+                        throw new Error(
+                            `[notionConnector] rollback failed | action: ${action.id} | org: ${orgId} | op: ${action.operationType} | reason: Missing page_id in payload`,
+                        );
+                    }
+
+                    const client = context.client as NotionClient;
+                    try {
+                        await client.pages.update({
+                            page_id: pageId,
+                            in_trash: true,
+                        });
+                    } catch (err) {
+                        handleNotionRollbackError(action, orgId, err);
+                    }
+                },
+                requires: ['notion.token'],
+            },
+        } as SnapshotConnectorAction,
+        {
+            apiName: 'notion.database_items.archive',
+            captureBeforeState: false,
+            operationType: 'UPDATE',
+            safetyLevel: 'MEDIUM',
+            resourceUrlResolver: (_apiName: string, payload: Record<string, unknown>) =>
+                typeof payload.page_id === 'string' ? `https://api.notion.com/v1/pages/${payload.page_id}` : null,
+            rollback: {
+                type: 'API_CALL',
+                execute: async (rawAction: unknown, context: RollbackContext): Promise<void> => {
+                    const orgId = 'unknown';
+                    const action = rawAction as NotionAction;
+                    // Domain alias of notion.pages.archive — same SDK call (pages.update), distinct apiName for Agent intent clarity per database-item vs standalone-page mental model.
+                    // Toggle target — page_id is caller-specified in the payload, not server-generated; no response extraction needed.
+                    const pageId = typeof action.payload?.page_id === 'string' ? action.payload.page_id : undefined;
+                    if (!pageId) {
+                        throw new Error(
+                            `[notionConnector] rollback failed | action: ${action.id} | org: ${orgId} | op: ${action.operationType} | reason: Missing page_id in payload`,
+                        );
+                    }
+
+                    const client = context.client as NotionClient;
+                    try {
+                        await client.pages.update({
+                            page_id: pageId,
+                            in_trash: false,
+                        });
+                    } catch (err) {
+                        handleNotionRollbackError(action, orgId, err);
+                    }
+                },
+                requires: ['notion.token'],
+            },
+        } as SnapshotConnectorAction,
+        {
+            apiName: 'notion.database_items.restore',
+            captureBeforeState: false,
+            operationType: 'UPDATE',
+            safetyLevel: 'MEDIUM',
+            resourceUrlResolver: (_apiName: string, payload: Record<string, unknown>) =>
+                typeof payload.page_id === 'string' ? `https://api.notion.com/v1/pages/${payload.page_id}` : null,
+            rollback: {
+                type: 'API_CALL',
+                execute: async (rawAction: unknown, context: RollbackContext): Promise<void> => {
+                    const orgId = 'unknown';
+                    const action = rawAction as NotionAction;
+                    // Domain alias of notion.pages.restore — same SDK call (pages.update), distinct apiName for Agent intent clarity per database-item vs standalone-page mental model.
+                    // Toggle target — page_id is caller-specified in the payload, not server-generated; no response extraction needed.
+                    const pageId = typeof action.payload?.page_id === 'string' ? action.payload.page_id : undefined;
+                    if (!pageId) {
+                        throw new Error(
+                            `[notionConnector] rollback failed | action: ${action.id} | org: ${orgId} | op: ${action.operationType} | reason: Missing page_id in payload`,
+                        );
+                    }
+
+                    const client = context.client as NotionClient;
+                    try {
+                        await client.pages.update({
+                            page_id: pageId,
+                            in_trash: true,
+                        });
+                    } catch (err) {
+                        handleNotionRollbackError(action, orgId, err);
+                    }
+                },
+                requires: ['notion.token'],
+            },
+        } as SnapshotConnectorAction,
+        {
+            apiName: 'notion.database_items.update',
+            captureBeforeState: true,
+            operationType: 'UPDATE',
+            safetyLevel: 'MEDIUM',
+            resourceUrlResolver: (_apiName: string, payload: Record<string, unknown>) =>
+                typeof payload.id === 'string' ? `https://api.notion.com/v1/pages/${payload.id}` : null,
+            rollback: {
+                type: 'API_CALL',
+                execute: async (rawAction: unknown, context: RollbackContext): Promise<void> => {
+                    const orgId = 'unknown';
+                    const action = rawAction as NotionAction;
+                    // Domain alias of notion.pages.update — identical snapshot-restore logic, distinct apiName for database-item semantics.
+                    const beforeState = action.snapshot?.beforeState ?? null;
+                    if (!beforeState) {
+                        throw new Error(
+                            `[notionConnector] rollback failed | action: ${action.id} | org: ${orgId} | op: ${action.operationType} | reason: Missing beforeState`,
+                        );
+                    }
+
+                    if (!beforeState.id) {
+                        throw new Error(
+                            `[notionConnector] rollback failed | action: ${action.id} | org: ${orgId} | op: ${action.operationType} | reason: Missing page id in beforeState`,
+                        );
+                    }
+
+                    const client = context.client as NotionClient;
+                    try {
+                        await client.pages.update({
+                            page_id: beforeState.id,
+                            properties: beforeState.properties as Parameters<typeof client.pages.update>[0]['properties'],
+                        });
+                    } catch (err) {
+                        handleNotionRollbackError(action, orgId, err);
+                    }
+                },
+                requires: ['notion.token'],
+            },
+        } as SnapshotConnectorAction,
     ],
 };
+
