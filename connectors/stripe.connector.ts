@@ -155,6 +155,205 @@ const stripeActions = [
                 requires: [],
             },
         },
+        // Stripe charges cannot be deleted or cancelled via the API. Reversal requires a separate
+        // stripe.refunds.create action, which must never be triggered automatically during rollback (Decision 1 principle).
+        {
+            apiName: 'stripe.charges.create',
+            captureBeforeState: false,
+            operationType: 'CREATE',
+            safetyLevel: 'HIGH',
+            rollback: {
+                type: 'NONE',
+                execute: async (): Promise<void> => {
+                    throw new Error(
+                        'Stripe charges cannot be deleted, voided, or cancelled via the API. If reversal is needed, a separate stripe.refunds.create action must be explicitly initiated and approved — this is never triggered automatically as part of charge rollback.',
+                    );
+                },
+                requires: [],
+            },
+        },
+        {
+            apiName: 'stripe.customers.delete',
+            captureBeforeState: false,
+            operationType: 'DELETE',
+            safetyLevel: 'HIGH',
+            rollback: {
+                type: 'NONE',
+                execute: async (rawAction: unknown): Promise<void> => {
+                    const orgId = 'unknown';
+                    const action = rawAction as StripeAction;
+                    throw getRollbackError(
+                        action,
+                        orgId,
+                        'Stripe customer deletion is permanent and cannot be undone — no restore endpoint exists.',
+                    );
+                },
+                requires: [],
+            },
+        },
+        {
+            apiName: 'stripe.coupons.create',
+            captureBeforeState: false,
+            operationType: 'CREATE',
+            safetyLevel: 'MEDIUM',
+            rollback: {
+                type: 'API_CALL',
+                execute: async (rawAction: unknown, context: RollbackContext): Promise<void> => {
+                    const orgId = 'unknown';
+                    const action = rawAction as StripeAction;
+                    const res = getResponseRecord(action);
+                    const client = context.client as Stripe;
+                    const couponId = requireStringId(res, action, orgId, 'coupon');
+
+                    try {
+                        await client.coupons.del(couponId);
+                    } catch (err) {
+                        if (isNotFoundError(err)) return;
+
+                        console.error(
+                            `[stripeConnector] rollback failed | action: ${action.id} | org: ${orgId} | op: ${action.operationType}`,
+                            err,
+                        );
+                        throw err;
+                    }
+                },
+                requires: ['stripe.apiKey'],
+            },
+        },
+        {
+            apiName: 'stripe.coupons.delete',
+            captureBeforeState: false,
+            operationType: 'DELETE',
+            safetyLevel: 'HIGH',
+            rollback: {
+                type: 'NONE',
+                execute: async (rawAction: unknown): Promise<void> => {
+                    const orgId = 'unknown';
+                    const action = rawAction as StripeAction;
+                    throw getRollbackError(
+                        action,
+                        orgId,
+                        'Stripe coupon deletion is permanent — deleted coupons cannot be restored, only new coupons can be created.',
+                    );
+                },
+                requires: [],
+            },
+        },
+        // Meter events can only be canceled within 24 hours of ingestion via meterEventAdjustments.
+        // safetyLevel remains HIGH despite having an API_CALL rollback path (safetyLevel and rollback.type are independent).
+        {
+            apiName: 'stripe.meterEvents.create',
+            captureBeforeState: false,
+            operationType: 'CREATE',
+            safetyLevel: 'HIGH',
+            rollback: {
+                type: 'API_CALL',
+                execute: async (rawAction: unknown, context: RollbackContext): Promise<void> => {
+                    const orgId = 'unknown';
+                    const action = rawAction as StripeAction;
+                    const res = getResponseRecord(action);
+                    const client = context.client as Stripe;
+                    const identifier = requireStringId(res, action, orgId, 'meter event identifier');
+                    const eventName = typeof res.event_name === 'string' ? res.event_name : (action.payload?.event_name as string);
+
+                    if (!eventName) {
+                        const err = getRollbackError(action, orgId, 'Missing meter event event_name in response or payload');
+                        console.error(
+                            `[stripeConnector] rollback failed | action: ${action.id} | org: ${orgId} | op: ${action.operationType}`,
+                            err,
+                        );
+                        throw err;
+                    }
+
+                    try {
+                        await client.billing.meterEventAdjustments.create({
+                            event_name: eventName,
+                            type: 'cancel',
+                            cancel: {
+                                identifier,
+                            },
+                        });
+                    } catch (err) {
+                        console.error(
+                            `[stripeConnector] rollback failed | action: ${action.id} | org: ${orgId} | op: ${action.operationType}`,
+                            err,
+                        );
+                        throw getRollbackError(
+                            action,
+                            orgId,
+                            `Meter event cancellation failed — the 24-hour cancellation window may have passed: ${err instanceof Error ? err.message : String(err)}`,
+                        );
+                    }
+                },
+                requires: ['stripe.apiKey'],
+            },
+        },
+        // Toggle target — paymentMethodId is caller-specified in the payload; reversing attach is calling detach on the same id.
+        {
+            apiName: 'stripe.paymentMethods.attach',
+            captureBeforeState: false,
+            operationType: 'UPDATE',
+            safetyLevel: 'MEDIUM',
+            rollback: {
+                type: 'API_CALL',
+                execute: async (rawAction: unknown, context: RollbackContext): Promise<void> => {
+                    const orgId = 'unknown';
+                    const action = rawAction as StripeAction;
+                    const client = context.client as Stripe;
+                    const paymentMethodId =
+                        (action.payload?.paymentMethodId as string | undefined) ??
+                        (action.payload?.payment_method_id as string | undefined) ??
+                        (action.payload?.id as string | undefined);
+
+                    if (!paymentMethodId || typeof paymentMethodId !== 'string') {
+                        const err = getRollbackError(
+                            action,
+                            orgId,
+                            'Missing paymentMethodId in payload for paymentMethods.attach rollback',
+                        );
+                        console.error(
+                            `[stripeConnector] rollback failed | action: ${action.id} | org: ${orgId} | op: ${action.operationType}`,
+                            err,
+                        );
+                        throw err;
+                    }
+
+                    try {
+                        await client.paymentMethods.detach(paymentMethodId);
+                    } catch (err) {
+                        if (isNotFoundError(err)) return;
+
+                        console.error(
+                            `[stripeConnector] rollback failed | action: ${action.id} | org: ${orgId} | op: ${action.operationType}`,
+                            err,
+                        );
+                        throw err;
+                    }
+                },
+                requires: ['stripe.apiKey'],
+            },
+        },
+        // Stripe SDK explicit docstring constraint: "Detachment is permanent and irreversible — once detached,
+        // a PaymentMethod can no longer be used for payments or re-attached to a Customer."
+        {
+            apiName: 'stripe.paymentMethods.detach',
+            captureBeforeState: false,
+            operationType: 'UPDATE',
+            safetyLevel: 'HIGH',
+            rollback: {
+                type: 'NONE',
+                execute: async (rawAction: unknown): Promise<void> => {
+                    const orgId = 'unknown';
+                    const action = rawAction as StripeAction;
+                    throw getRollbackError(
+                        action,
+                        orgId,
+                        "Stripe payment method detachment is permanent and irreversible per Stripe's API — a detached payment method cannot be re-attached to any customer.",
+                    );
+                },
+                requires: [],
+            },
+        },
     ] satisfies StripeConnectorAction[];
 
 export const stripeConnector: Connector = {
